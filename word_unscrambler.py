@@ -1,4 +1,9 @@
 import random
+import time
+from colorama import Fore, Style, init
+
+# Initialize colorama for cross-platform compatibility
+init(autoreset=True)
 
 def get_random_word(word_list):
     """Returns a random word from the given word list"""
@@ -12,9 +17,10 @@ def check_descramble(scrambled_word, original_word):
     """Checks if the given scrambled word matches the original word"""
     return scrambled_word == original_word
 
-def track_score(correct_answers, incorrect_answers):
-    """Tracks the user's score"""
+def track_score():
+    """Initializes the score tracking structure"""
     return {"correct": {}, "incorrect": {}}
+
 def get_top_three(word_list, scores):
     """Returns the top three words from the given word list based on their scores"""
     word_scores = {}
@@ -35,81 +41,80 @@ def get_total_correct_answers(word_list, scores):
     """Returns the total number of correct answers from the given word list"""
     return sum(scores["correct"].values())
 
-def get_highest_scoring_word_percentage(word_list, scores):
-    """Returns the percentage of the highest scoring word's score relative to the total possible score"""
+def get_highest_scoring_word_percentage(word_list, scores, total_rounds):
+    """Returns the percentage of the highest scoring word's score relative to the total rounds played"""
     highest_scoring_word = get_highest_scoring_word(word_list, scores)
-    total_possible_score = len(word_list) * len(word_list)
     highest_scoring_word_score = scores["correct"].get(highest_scoring_word, 0)
-    return (highest_scoring_word_score / total_possible_score) * 100
+    return (highest_scoring_word_score / total_rounds) * 100 if total_rounds > 0 else 0
 
-def calculate_average_time(word_list, scores):
+def calculate_average_time(round_times):
     """Calculates the average time taken to answer each question"""
-    if not scores["correct"]:
+    if not round_times:
         return 0
-    total_time = 0
-    for word in word_list:
-        total_time += scores["correct"].get(word, 0) * 10
-    return total_time / len(word_list)
+    return sum(round_times) / len(round_times)
 
-def display_highest_scoring_word_percentage(word_list, scores):
+def display_highest_scoring_word_percentage(word_list, scores, total_rounds):
     """Displays the highest scoring word's score as a percentage of the total possible score"""
-    highest_scoring_word_percentage = get_highest_scoring_word_percentage(word_list, scores)
-    print(f"Highest scoring word percentage: {highest_scoring_word_percentage}%")
+    percentage = get_highest_scoring_word_percentage(word_list, scores, total_rounds)
+    print(f"Highest scoring word percentage: {percentage:.2f}%")
 
 def play_game(rounds):
     """Plays a specified number of rounds of the word descrambling game"""
     word_list = ["apple", "banana", "cherry", "date", "elderberry"]
-    overall_score = track_score(0, 0)
-    top_three_words = []
-    highest_scoring_word = None
-    total_correct_answers = 0
-    highest_scoring_word_percentage = None
-    average_time = None
-    for _ in range(rounds):
+    overall_score = track_score()
+    round_times = []
+
+    # Welcome Screen
+    print(Fore.CYAN + Style.BRIGHT + "=" * 40)
+    print(Fore.YELLOW + Style.BRIGHT + "    WELCOME TO THE WORD UNSCRAMBLER!    ")
+    print(Fore.CYAN + Style.BRIGHT + "=" * 40)
+    print(Fore.WHITE + f"Can you unscramble {rounds} words before time runs out?\n")
+    time.sleep(1)
+    for i in range(rounds):
+        print(Fore.BLUE + f"--- Round {i + 1} of {rounds} ---")
         original_word = get_random_word(word_list)
         scrambled_word = scramble_word(original_word)
-        print(f"Unscramble the word: {scrambled_word}")
-        user_answer = input("Enter your answer: ")
-        score = track_score(0, 0)
-        if check_descramble(user_answer, original_word):
-            print("Correct!")
-            score["correct"][original_word] = score["correct"].get(original_word, 0) + 1
-        else:
-            print(f"Sorry, the correct answer was: {original_word}")
-            score["incorrect"][original_word] = score["incorrect"].get(original_word, 0) + 1
-        print("Current score:", score)
-        top_three_words = get_top_three(word_list, score)
-        print("Top 3 words:", top_three_words)
-        highest_scoring_word = get_highest_scoring_word(word_list, score)
-        print(f"Highest scoring word: {highest_scoring_word} with score {score['correct'].get(highest_scoring_word, 0)}")
-        total_correct_answers = get_total_correct_answers(word_list, score)
-        print(f"Total correct answers: {total_correct_answers}")
-        highest_scoring_word_percentage = get_highest_scoring_word_percentage(word_list, score)
-        print(f"Highest scoring word percentage: {highest_scoring_word_percentage}%")
-        average_time = calculate_average_time(word_list, score)
-        print(f"Average time taken: {average_time} seconds")
-        display_highest_scoring_word_percentage(word_list, score)
-        overall_score = track_score(0, 0)
-    rounds = 0
-    # game loop
-    while True:
-        word = input("Enter a word: ")
-        is_correct = input("Is the word correct? (yes/no): ").lower() == "yes"
-        if is_correct:
-            overall_score["correct"][word] = overall_score["correct"].get(word, 0) + 1
-        else:
-            overall_score["incorrect"][word] = overall_score["incorrect"].get(word, 0) + 1
-        rounds += 1
-        if input("Do you want to continue? (yes/no): ").lower() != "yes":
-            break
+        print(Fore.MAGENTA + Style.BRIGHT + f"Unscramble the word: {scrambled_word}")
 
+        start_time = time.time()
+        user_answer = input(Fore.WHITE + "Enter your answer: ").strip().lower()
+        end_time = time.time()
+        duration = end_time - start_time
+        round_times.append(duration)
+
+        if check_descramble(user_answer, original_word):
+            print(Fore.GREEN + Style.BRIGHT + "✔ Correct!")
+            overall_score["correct"][original_word] = overall_score["correct"].get(original_word, 0) + 1
+        else:
+            print(Fore.RED + Style.BRIGHT + f"✘ Sorry, the correct answer was: {original_word}")
+            overall_score["incorrect"][original_word] = overall_score["incorrect"].get(original_word, 0) + 1
+
+        print(Fore.CYAN + "\n--- Quick Stats ---")
+        print(f"Time for this round: {Fore.YELLOW}{duration:.2f}s")
+        top_three_words = get_top_three(word_list, overall_score)
+        print(f"Top 3 words: {Fore.GREEN}{top_three_words}")
+
+        highest_scoring_word = get_highest_scoring_word(word_list, overall_score)
+        print(f"Leader: {Fore.YELLOW}{highest_scoring_word} ({overall_score['correct'].get(highest_scoring_word, 0)})")
+
+        total_correct_answers = get_total_correct_answers(word_list, overall_score)
+        print(f"Total Correct: {Fore.GREEN}{total_correct_answers}")
+
+        average_time = calculate_average_time(round_times)
+        print(f"Avg Time: {Fore.YELLOW}{average_time:.2f}s")
+        print("-" * 20 + "\n")
+
+    # Final Summary
+    print(Fore.CYAN + Style.BRIGHT + "=" * 40)
+    print(Fore.YELLOW + Style.BRIGHT + "          GAME OVER! FINAL RESULTS          ")
+    print(Fore.CYAN + Style.BRIGHT + "=" * 40)
+    print(f"Final Score Details: {Fore.WHITE}{overall_score}")
     average_score = {
         "correct": sum(overall_score["correct"].values()) / rounds,
         "incorrect": sum(overall_score["incorrect"].values()) / rounds
     }
-    print("Final score:", overall_score)
-    print("Average score:", average_score)
-
+    print(f"Average Success Rate: {Fore.GREEN}{average_score['correct']} correct per round")
+    print(Fore.CYAN + "=" * 40)
 if __name__ == "__main__":
     play_game(5)
 

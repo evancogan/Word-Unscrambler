@@ -17,16 +17,22 @@ def check_descramble(scrambled_word, original_word):
     """Checks if the given scrambled word matches the original word"""
     return scrambled_word == original_word
 
-def calculate_points(word):
-    """Calculates points based on word length (Difficulty Rating)"""
-    # Example logic: 3-4 letters = 10pts, 5-6 = 20pts, 7+ = 30pts
+def calculate_points(word, duration):
+    """Calculates points based on word length and time taken (Multiplier)"""
+    # Base points based on length
     length = len(word)
     if length <= 4:
-        return 10
+        base_points = 10
     elif length <= 6:
-        return 20
+        base_points = 20
     else:
-        return 30
+        base_points = 30
+
+    # Time multiplier: Starts at 2.0x for < 2s, decays toward 1.0x
+    multiplier = 1 + (1 / (1 + duration))
+
+    # Convert total points to integer
+    return int(base_points * multiplier), multiplier
 
 def calculate_average_time(round_times):
     """Calculates the average time taken to answer each question"""
@@ -59,6 +65,7 @@ def play_game(rounds):
     print(Fore.YELLOW + Style.BRIGHT + "    WELCOME TO THE WORD UNSCRAMBLER!    ")
     print(Fore.CYAN + Style.BRIGHT + "=" * 40)
     print(Fore.WHITE + f"Can you unscramble {rounds} words before time runs out?\n")
+    print(Fore.WHITE + "Hint: all these words are FRUITY\n")
     time.sleep(1)
     for i in range(rounds):
         print(Fore.BLUE + f"--- Round {i + 1} of {rounds} ---")
@@ -75,9 +82,9 @@ def play_game(rounds):
         round_times.append(duration)
 
         if check_descramble(user_answer, original_word):
-            points_earned = calculate_points(original_word)
+            points_earned, multiplier = calculate_points(original_word, duration)
             overall_score["total_points"] += points_earned
-            print(Fore.GREEN + Style.BRIGHT + f"✔ Correct! +{points_earned} points")
+            print(Fore.GREEN + Style.BRIGHT + f"✔ Correct! +{points_earned} points (x{multiplier:.2f} speed bonus)")
         else:
             print(Fore.RED + Style.BRIGHT + f"✘ Sorry, the correct answer was: {original_word}")
 
